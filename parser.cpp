@@ -2,6 +2,7 @@
 #include <iostream>
 #include "parser.h"
 
+
 Parser::Parser(const Lexer &lex) : lexer(lex)
 {
     advance();
@@ -30,56 +31,26 @@ void Parser::parseGlobalVars() {
         syntaxError();
     }
 
-    while (true) {
-        advance();
+    while (currentToken.type == ID) {
+        // Process the current identifier (e.g., add it to the symbol table)
+        std::string identifier = currentToken.value;
+        symbolTable.addVariable(identifier, /* isPublic */ true);
+
+        advance(); // Move to the next token
 
         if (currentToken.type == COMMA) {
-            advance();
+            advance(); // Move past the comma
             if (currentToken.type != ID) {
                 syntaxError();
             }
         } else if (currentToken.type == SEMICOLON) {
-            advance();
+            advance(); // Move past the semicolon
             break;
         } else {
             syntaxError();
         }
     }
 }
-
-// void Parser::parseScope()
-// {
-//     if (currentToken.type == ID) {
-//         advance();
-//         if (currentToken.type == LBRACE) {
-//             advance();
-
-//             while (currentToken.type == PUBLIC || currentToken.type == PRIVATE) {
-//                 if (currentToken.type == PUBLIC)
-//                 {
-//                     parsePublicVars();
-//                 } else if (currentToken.type == PRIVATE)
-//                 {
-//                     parsePrivateVars();
-//                 }   
-//             }
-            
-//             // parsePublicVars();
-//             // parsePrivateVars();
-//             parseStmtList();
-
-//             if (currentToken.type == RBRACE) {
-//                 advance();
-//             } else {
-//                 syntaxError();
-//             }
-//         } else {
-//             syntaxError();
-//         }
-//     } else {
-//         syntaxError();
-//     }
-// }
 
 void Parser::parseScope()
 {
