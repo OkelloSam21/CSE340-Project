@@ -1,12 +1,11 @@
-#include <vector>
 #include <iostream>
 #include "parser.h"
 
 
-Parser::Parser(const Lexer &lex) : lexer(lex)
+
+Parser::Parser(const Lexer &lex) : lexer(lex),currentScope("global")
 {
     advance();
-    std::cout << "token: " << currentToken.value << " (" << currentToken.type << ")" << std::endl;
 }
 
 void Parser::advance()
@@ -16,8 +15,40 @@ void Parser::advance()
 
 void Parser::syntaxError()
 {
-    std::cerr << "Syntax Error";
+    std::cout << "Syntax Error";
     exit(1);
+}
+
+
+void Parser::parseScope() {
+    if (currentToken.type != ID) {
+        syntaxError();
+    }
+    
+
+    std::string scopeName = currentToken.value;
+    symbolTable.enterScope(scopeName);
+    advance(); 
+    
+    if (currentToken.type != LBRACE) {
+        syntaxError();
+    }
+    advance();
+
+    if (currentToken.type == PUBLIC) {
+        parsePublicVars();
+    }
+    if (currentToken.type == PRIVATE) {
+        parsePrivateVars();
+    }
+
+    parseStmtList();
+    
+    if (currentToken.type != RBRACE) {
+        syntaxError();
+    }
+    symbolTable.exitScope();
+    advance(); 
 }
 
 void Parser::parseProgram()
@@ -28,195 +59,122 @@ void Parser::parseProgram()
 
 void Parser::parseGlobalVars() {
     if (currentToken.type != ID) {
-        syntaxError();
-    }
-
-    while (currentToken.type == ID) {
-        // Process the current identifier (e.g., add it to the symbol table)
-        std::string identifier = currentToken.value;
-        symbolTable.addVariable(identifier, /* isPublic */ true);
-
-        advance(); // Move to the next token
-
-        if (currentToken.type == COMMA) {
-            advance(); // Move past the comma
-            if (currentToken.type != ID) {
-                syntaxError();
-            }
-        } else if (currentToken.type == SEMICOLON) {
-            advance(); // Move past the semicolon
-            break;
-        } else {
-            syntaxError();
-        }
-    }
-}
-
-void Parser::parseScope()
-{
-    // Expect an ID
-    if (currentToken.type != ID) {
-        syntaxError();
-    }
-    std::string scopeName = currentToken.value;  // Store scope name for symbol table
-    advance();
-
-    // Expect a left brace
-    if (currentToken.type != LBRACE) {
-        syntaxError();
-    }
-    advance();
-
-    // Handle optional public and private vars
-    if (currentToken.type == PUBLIC) {
-        parsePublicVars();
-    }
-    if (currentToken.type == PRIVATE) {
-        parsePrivateVars();
-    }
-
-    // Parse statement list
-    parseStmtList();
-
-    // Expect a right brace
-    if (currentToken.type != RBRACE) {
-        syntaxError();
-    }
-    advance();
-}
-
-void Parser::parsePublicVars()
-{
-    // We're already on PUBLIC token
-    advance();  // Move past PUBLIC
-    
-    if (currentToken.type != COLON) {
-        syntaxError();
-    }
-    advance();  // Move past COLON
-    
-    parseVarList();
-}
-
-void Parser::parsePrivateVars()
-{
-    // We're already on PRIVATE token
-    advance();  // Move past PRIVATE
-    
-    if (currentToken.type != COLON) {
-        syntaxError();
-    }
-    advance();  // Move past COLON
-    
-    parseVarList();
-}
-
-void Parser::parseVarList()
-{
-    if (currentToken.type != ID) {
-        syntaxError();
+        return;  // Empty global vars is valid
     }
 
     do {
-        advance();  // Move past ID or COMMA
-        
+        // Add the actual token value as a global variable
+        symbolTable.addGlobalVariable(currentToken.value);
+        advance(); // past ID
+
         if (currentToken.type == SEMICOLON) {
-            advance();  // Move past semicolon
+            advance(); // past semicolon
             break;
         } else if (currentToken.type != COMMA) {
+            syntaxError();
+        }
+        advance(); // past comma
+
+        if (currentToken.type != ID) {
             syntaxError();
         }
     } while (true);
 }
 
-// void Parser::parsePublicVars()
-// {
-//     // if (currentToken.type == PUBLIC) {
-//         advance();
-//         if (currentToken.type == COLON) {
-//             advance();
-//             parseVarList();
-//             if (currentToken.type == SEMICOLON) {
-//                 advance();
-//             } else {
-//                 syntaxError();
-//             }
-//         } else {
-//             syntaxError();
-//         }
-//     // }
-// }
-
-// void Parser::parsePrivateVars()
-// {
-//     // if (currentToken.type == PRIVATE) {
-//         advance();
-//         if (currentToken.type == COLON) {
-//             advance();
-//             parseVarList();
-//             if (currentToken.type == SEMICOLON) {
-//                 advance();
-//             } else {
-//                 syntaxError();
-//             }
-//         } else {
-//             syntaxError();
-//         }
-//     // }
-// }
-
-// void Parser::parseVarList()
-// {
-//     if (currentToken.type != ID) {
-//         syntaxError();  // Expecting an ID
-//     }
-
-//     while (true) {
-//         advance();
-
-//         if (currentToken.type == COMMA) {
-//             advance();
-//             if (currentToken.type != ID) {
-//                 syntaxError();  // Comma must be followed by an ID
-//             }
-//         } else if (currentToken.type == SEMICOLON) {
-//             advance();
-//             break;
-//         } else {
-//             syntaxError();  // Expecting either a comma or a semicolon
-//         }
-//     }
-// }
-
-void Parser::parseStmtList()
-{
-    while (currentToken.type != RBRACE && currentToken.type != END_OF_FILE) {
-        parseStmt();
+void Parser::parsePublicVars() {
+    advance();
+    
+    if (currentToken.type != COLON) {
+        syntaxError();
     }
+    advance();
+    
+    parseVarList(true);
 }
 
-void Parser::parseStmt()
-{
-    if (currentToken.type == ID) {
-        advance();
+void Parser::parsePrivateVars() {
+    advance(); 
+    if (currentToken.type != COLON) {
+        syntaxError();
+    }
+    advance();
+    
+    parseVarList(false);
+}
+
+void Parser::parseStmtList() {   
+    while (currentToken.type != RBRACE && currentToken.type != END_OF_FILE) {
+        if (currentToken.type != ID) {
+            syntaxError();
+        }
+        
+        std::string id = currentToken.value;
+        advance(); 
+        
         if (currentToken.type == EQUAL) {
             advance();
-            if (currentToken.type == ID) {
-                advance();
-                if (currentToken.type == SEMICOLON) {
-                    advance();
-                } else {
-                    syntaxError();
-                }
-            } else {
+            
+            if (currentToken.type != ID) {
                 syntaxError();
             }
+            
+            std::string rhs = currentToken.value;
+            symbolTable.addAssignment(id, rhs);
+            advance();
+            
+            if (currentToken.type != SEMICOLON) {
+                syntaxError();
+            }
+            advance();
         } else if (currentToken.type == LBRACE) {
-            parseScope();
+            advance();
+            
+            symbolTable.enterScope(id);
+
+            if (currentToken.type == PUBLIC) {
+                parsePublicVars();
+            }
+            if (currentToken.type == PRIVATE) {
+                parsePrivateVars();
+            }
+            
+            parseStmtList();
+            
+            if (currentToken.type != RBRACE) {
+                syntaxError();
+            }
+            
+            symbolTable.exitScope();
+            advance();
         } else {
             syntaxError();
         }
-    } else {
+    }
+    
+}
+
+void Parser::parseVarList(bool isPublic) {   
+    if (currentToken.type != ID) {
         syntaxError();
     }
+
+    do {
+        symbolTable.addVariable(currentToken.value, isPublic);
+        advance();
+
+        if (currentToken.type == SEMICOLON) {
+            advance();
+            break;
+        }
+        
+        if (currentToken.type != COMMA) {
+            syntaxError();
+        }
+        
+        advance();
+        
+        if (currentToken.type != ID) {
+            syntaxError();
+        }
+    } while (true);
 }

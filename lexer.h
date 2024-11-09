@@ -31,7 +31,7 @@ struct Token {
 class Lexer {
 private:
     std::string input;
-    int position = 0;
+    size_t position = 0;
 
     void skipWhitespace();
     void skipComments();

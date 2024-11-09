@@ -10,16 +10,28 @@ void Lexer::skipWhitespace() {
 }
 
 void Lexer::skipComments() {
-    if(input[position] == '/' && position + 1 < input.size()) {
-        if (input[position +  1] == '/')
-        {
-            position += 2;
-            while (position < input.size() && input[position] != '\n')
-            {
+    while (position < input.size()) {
+        // Skip spaces before potential comment
+        skipWhitespace();
+        
+        // Check for comment start
+        if (position + 1 < input.size() && 
+            input[position] == '/' && 
+            input[position + 1] == '/') {
+            position += 2;  // Skip //
+            // Skip until newline
+            while (position < input.size() && input[position] != '\n') {
                 position++;
             }
-            position++;            
-        }         
+            if (position < input.size()) {
+                position++;  // Skip the newline
+            }
+            
+            // Skip any following whitespace
+            skipWhitespace();
+        } else {
+            break;  // No more comments to skip
+        }
     }
 }
 
@@ -60,10 +72,17 @@ Token Lexer::lexStringLiteral() {
 }
 
 Token Lexer::getNextToken() {
-    while (true) {
+    while (position < input.size()) {
         skipWhitespace();
+
+        size_t oldPos = position;
+
         skipComments();
 
+        if(oldPos == position) {
+            break;
+        }
+    }
         if (position >= input.size()) {
             return Token(END_OF_FILE, "");
         }
@@ -85,7 +104,7 @@ Token Lexer::getNextToken() {
                     throw std::runtime_error("Unexpected character: " + std::to_string(currentChar));
                 }
         }
-    }
+    
 }
 
 

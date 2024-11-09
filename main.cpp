@@ -21,14 +21,13 @@ void processFile(const std::string& filepath) {
 
     try {
         parser.parseProgram();
-        std::cout << "Parsed successfully: " << filepath << "\n" << std::endl;
+        parser.printResolutons();
     } catch (const std::exception& e) {
-        std::cerr << "Error in file " << filepath << ": " << e.what() << "\n" << std::endl;
+        std::cout << "Syntax Error\n" << std::endl;
     }
 }
 
 int main(int argc, char* argv[]) {
-    // Ensure a filename is provided as an argument
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
         return 1;
