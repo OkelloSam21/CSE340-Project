@@ -19,8 +19,7 @@ private:
     void parsePrivateVars();
     void parseVarList(bool isPublic);
     void parseStmtList();
-    // void parseStmt();
-
+    
 public:
     explicit Parser(const Lexer& lex);
     void parseProgram();

@@ -30,6 +30,8 @@ private:
     std::unordered_map<std::string, std::vector<Variable>> variables;
     std::vector<Assignment> assignments;
 
+    bool isVariableAccessible(const Variable& var, const std::string& fromScope) const;
+
 public:
     void enterScope(const std::string& scopeName);
     void exitScope();

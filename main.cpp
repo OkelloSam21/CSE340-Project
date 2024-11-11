@@ -12,18 +12,16 @@ void processFile(const std::string& filepath) {
         return;
     }
 
-    // Read file contents into a string
     std::string input((std::istreambuf_iterator<char>(file)),
-                      std::istreambuf_iterator<char>());
-
-    Lexer lexer(input);
-    Parser parser(lexer);
+                     std::istreambuf_iterator<char>());
 
     try {
+        Lexer lexer(input);
+        Parser parser(lexer);
         parser.parseProgram();
         parser.printResolutons();
-    } catch (const std::exception& e) {
-        std::cout << "Syntax Error\n" << std::endl;
+    } catch (...) {
+        std::cout << "Syntax Error\n";
     }
 }
 

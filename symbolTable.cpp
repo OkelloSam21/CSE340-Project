@@ -7,7 +7,13 @@ Assignment::Assignment(const std::string& l, const std::string& r, const std::st
     : lhs(l), rhs(r), scope(s) {}
 
 void SymbolTable::enterScope(const std::string& scopeName) {
-    scopeStack.push_back(scopeName);
+    std::string newScope;
+    if (scopeStack.empty()) {
+        newScope = scopeName;
+    } else {
+        newScope = scopeStack.back() + "." + scopeName;
+    }
+    scopeStack.push_back(newScope);
 }
 
 void SymbolTable::exitScope() {
@@ -46,9 +52,8 @@ bool isVariableAccessible(const std::string& fromScope, const std::string& defin
             fromScope[definingScope.length()] == '.');
 }
 
-
 std::string SymbolTable::resolveVariable(const std::string& name, const std::string& currentScope) {
-    // First check current scope
+    // 1. First check current scope
     auto currScopeIt = variables.find(currentScope);
     if (currScopeIt != variables.end()) {
         for (const auto& var : currScopeIt->second) {
@@ -58,42 +63,48 @@ std::string SymbolTable::resolveVariable(const std::string& name, const std::str
         }
     }
 
-    // For the hello scope only check global scope first
-    if (currentScope == "hello") {
-        auto globalIt = variables.find("global");
-        if (globalIt != variables.end()) {
-            for (const auto& var : globalIt->second) {
-                if (var.name == name) {
-                    return "::" + name;
+    // 2. Check parent scopes for public variables
+    size_t lastDot = currentScope.rfind('.');
+    while (lastDot != std::string::npos) {
+        std::string parentScope = currentScope.substr(0, lastDot);
+        auto parentVarsIt = variables.find(parentScope);
+        if (parentVarsIt != variables.end()) {
+            for (const auto& var : parentVarsIt->second) {
+                if (var.name == name && var.isPublic) {
+                    return parentScope + "." + name;
                 }
             }
         }
-    } else {
-        // For nested scopes, check parent scope's public variables before global
-        if (currentScope != "global") {
-            auto parentIt = variables.find("hello");  // hello is the parent scope
-            if (parentIt != variables.end()) {
-                for (const auto& var : parentIt->second) {
-                    if (var.name == name && var.isPublic) {
-                        return "hello." + name;
-                    }
-                }
-            }
-        }
+        lastDot = parentScope.rfind('.');
+    }
 
-        // Finally check global scope
-        auto globalIt = variables.find("global");
-        if (globalIt != variables.end()) {
-            for (const auto& var : globalIt->second) {
-                if (var.name == name) {
-                    return "::" + name;
+    // 3. Check the top-level scope (if we're in a nested scope)
+    if (currentScope.find('.') != std::string::npos) {
+        std::string topScope = currentScope.substr(0, currentScope.find('.'));
+        auto topVarsIt = variables.find(topScope);
+        if (topVarsIt != variables.end()) {
+            for (const auto& var : topVarsIt->second) {
+                if (var.name == name && var.isPublic) {
+                    return topScope + "." + name;
                 }
             }
         }
     }
 
+    // 4. Check global scope
+    auto globalIt = variables.find("global");
+    if (globalIt != variables.end()) {
+        for (const auto& var : globalIt->second) {
+            if (var.name == name) {
+                return "::" + name;
+            }
+        }
+    }
+
+    // 5. Variable not found in any accessible scope
     return "?." + name;
 }
+
 void SymbolTable::printResolutions() {
     for (const auto& assignment : assignments) {
         std::string resolvedLhs = resolveVariable(assignment.lhs, assignment.scope);

@@ -5,7 +5,7 @@
 #include <string>
 
 enum TokenType {
-    END_OF_FILE,
+    END_OF_FILE = 0,
     PUBLIC,
     PRIVATE,
     EQUAL,
@@ -15,8 +15,6 @@ enum TokenType {
     LBRACE,
     RBRACE,
     ID,
-    INTEGER_LITERAL,
-    STRING_LITERAL,
     ERROR,
 };
 
@@ -36,8 +34,6 @@ private:
     void skipWhitespace();
     void skipComments();
     Token lexIdentifier();
-    Token lexIntegerLiteral();
-    Token lexStringLiteral();
 
 public:
     explicit Lexer(const std::string& src);

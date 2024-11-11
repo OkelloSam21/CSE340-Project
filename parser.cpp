@@ -1,9 +1,7 @@
 #include <iostream>
 #include "parser.h"
 
-
-
-Parser::Parser(const Lexer &lex) : lexer(lex),currentScope("global")
+Parser::Parser(const Lexer &lex) : lexer(lex), currentScope("global")
 {
     advance();
 }
@@ -19,22 +17,37 @@ void Parser::syntaxError()
     exit(1);
 }
 
+void Parser::parseProgram() {
+    parseGlobalVars();
+
+    if (currentToken.type == ID) {
+        parseScope();
+    }
+
+    if (currentToken.type != END_OF_FILE) {
+        syntaxError();
+    }
+}
 
 void Parser::parseScope() {
     if (currentToken.type != ID) {
         syntaxError();
     }
     
+    
+
+
 
     std::string scopeName = currentToken.value;
     symbolTable.enterScope(scopeName);
-    advance(); 
-    
+    advance();
+
     if (currentToken.type != LBRACE) {
         syntaxError();
     }
     advance();
 
+    // Handle optional public/private sections
     if (currentToken.type == PUBLIC) {
         parsePublicVars();
     }
@@ -43,62 +56,66 @@ void Parser::parseScope() {
     }
 
     parseStmtList();
-    
+
     if (currentToken.type != RBRACE) {
         syntaxError();
     }
     symbolTable.exitScope();
-    advance(); 
+    advance();
 }
 
-void Parser::parseProgram()
+void Parser::parseGlobalVars()
 {
-    parseGlobalVars();
-    parseScope();
-}
-
-void Parser::parseGlobalVars() {
-    if (currentToken.type != ID) {
-        return;  // Empty global vars is valid
+    if (currentToken.type != ID)
+    {
+        return;
     }
 
-    do {
-        // Add the actual token value as a global variable
+    do
+    {
         symbolTable.addGlobalVariable(currentToken.value);
-        advance(); // past ID
+        advance();
 
-        if (currentToken.type == SEMICOLON) {
-            advance(); // past semicolon
+        if (currentToken.type == SEMICOLON)
+        {
+            advance();
             break;
-        } else if (currentToken.type != COMMA) {
+        }
+        else if (currentToken.type != COMMA)
+        {
             syntaxError();
         }
-        advance(); // past comma
+        advance();
 
-        if (currentToken.type != ID) {
+        if (currentToken.type != ID)
+        {
             syntaxError();
         }
     } while (true);
 }
 
-void Parser::parsePublicVars() {
+void Parser::parsePublicVars()
+{
     advance();
-    
-    if (currentToken.type != COLON) {
+
+    if (currentToken.type != COLON)
+    {
         syntaxError();
     }
     advance();
-    
+
     parseVarList(true);
 }
 
-void Parser::parsePrivateVars() {
-    advance(); 
-    if (currentToken.type != COLON) {
+void Parser::parsePrivateVars()
+{
+    advance();
+    if (currentToken.type != COLON)
+    {
         syntaxError();
     }
     advance();
-    
+
     parseVarList(false);
 }
 
@@ -109,7 +126,7 @@ void Parser::parseStmtList() {
         }
         
         std::string id = currentToken.value;
-        advance(); 
+        advance();
         
         if (currentToken.type == EQUAL) {
             advance();
@@ -150,30 +167,35 @@ void Parser::parseStmtList() {
             syntaxError();
         }
     }
-    
 }
 
-void Parser::parseVarList(bool isPublic) {   
-    if (currentToken.type != ID) {
+void Parser::parseVarList(bool isPublic)
+{
+    if (currentToken.type != ID)
+    {
         syntaxError();
     }
 
-    do {
+    do
+    {
         symbolTable.addVariable(currentToken.value, isPublic);
         advance();
 
-        if (currentToken.type == SEMICOLON) {
+        if (currentToken.type == SEMICOLON)
+        {
             advance();
             break;
         }
-        
-        if (currentToken.type != COMMA) {
+
+        if (currentToken.type != COMMA)
+        {
             syntaxError();
         }
-        
+
         advance();
-        
-        if (currentToken.type != ID) {
+
+        if (currentToken.type != ID)
+        {
             syntaxError();
         }
     } while (true);
