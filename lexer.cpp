@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include <cctype>
+#include <iostream>
 
 Lexer::Lexer(const std::string& src) : input(src) {}
 
@@ -10,8 +11,8 @@ void Lexer::skipWhitespace() {
 }
 
 void Lexer::skipComments() {
-    // while (position < input.size()) {
-    //     skipWhitespace();
+    while (position < input.size()) {
+        skipWhitespace();
         
         if (position + 1 < input.size() && 
             input[position] == '/' && 
@@ -26,6 +27,9 @@ void Lexer::skipComments() {
             }
             
             skipWhitespace();
+        } else {
+            break;
+        }
     }
 }
 
